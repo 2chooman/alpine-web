@@ -1,0 +1,48 @@
+version: '3.7'
+
+services:
+    nginx:
+        build: ./.dockerfiles/alpine-nginx
+        environment:
+            - TZ=Europe/Moscow
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./conf.d/nginx/conf.d:/etc/nginx/conf.d
+            - ./conf.d/nginx/sites-enabled:/etc/nginx/sites-enabled
+            - ./conf.d/certbot:/etc/nginx/certbot
+            - ./www:/var/www
+            - ./cache:/var/cache/nginx
+            - ./log:/var/log/nginx
+        links:
+            - php-fpm
+        restart: unless-stopped
+
+    php-fpm:
+        build: ./.dockerfiles/alpine-php
+        environment:
+            - TZ=Europe/Moscow
+        ports:
+            - "9000:9000"
+        volumes:
+            - ./conf.d/php-fpm/php-fpm.d:/etc/php7/php-fpm.d
+            - ./conf.d/php-fpm/ini:/etc/php7/conf.d
+            - ./www:/var/www
+        links:
+            - mariadb
+        restart: unless-stopped
+    
+    mariadb:
+        image: linuxserver/mariadb:latest
+        environment:
+            - MYSQL_ROOT_PASSWORD=rootpw
+            - TZ=Europe/Moscow
+            #- MYSQL_DATABASE=test_db
+            #- MYSQL_USER=test_user
+            #- MYSQL_PASSWORD=test_pwd
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./conf.d/mariadb:/config
+        restart: unless-stopped
